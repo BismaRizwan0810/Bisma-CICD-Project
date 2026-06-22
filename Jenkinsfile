@@ -1,15 +1,8 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'Node26'
-    }
-
     environment {
-        // Docker Hub username + image name
-        DOCKER_IMAGE = 'bisma08/jenkins-demo'
-
-        // Auto increment build number tag
+        DOCKER_IMAGE = 'YOUR-DOCKERHUB-USERNAME/jenkins-demo'
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
@@ -22,33 +15,18 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                echo 'Installing dependencies...'
-                sh 'npm install'
-            }
-        }
-
-        stage('Build Application') {
-            steps {
-                echo 'Building Node.js app...'
-                sh 'npm run build'
-            }
-        }
-
         stage('Docker Build') {
             steps {
                 echo 'Building Docker Image...'
 
                 sh 'docker build -t $DOCKER_IMAGE:$IMAGE_TAG .'
-
                 sh 'docker tag $DOCKER_IMAGE:$IMAGE_TAG $DOCKER_IMAGE:latest'
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                echo 'Pushing Docker Image to Docker Hub...'
+                echo 'Pushing Docker Image...'
 
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
@@ -57,9 +35,7 @@ pipeline {
                 )]) {
 
                     sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
-
                     sh 'docker push $DOCKER_IMAGE:$IMAGE_TAG'
-
                     sh 'docker push $DOCKER_IMAGE:latest'
                 }
             }
@@ -76,18 +52,17 @@ pipeline {
 
                 sh 'docker run -d -p 3000:3000 --name jenkins-demo $DOCKER_IMAGE:latest'
 
-                echo 'Application is live at http://localhost:3000'
+                echo 'App is running on port 3000'
             }
         }
     }
 
     post {
         success {
-            echo '✅ CI/CD Pipeline executed successfully!'
+            echo '✅ Pipeline SUCCESS'
         }
-
         failure {
-            echo '❌ Pipeline failed. Check logs!'
+            echo '❌ Pipeline FAILED'
         }
     }
 }
